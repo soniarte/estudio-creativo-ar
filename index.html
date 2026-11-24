@@ -943,10 +943,10 @@ Reglas obligatorias de estilo y estrategia:
       try {
         const cleanKey = state.apiKey.trim();
         const candidateModels = [
-          'gemini-2.5-flash',
-          'gemini-2.0-flash',
+          'gemini-3.8-flash',
+          'gemini-3.5-flash',
           'gemini-3-flash-preview',
-          'gemini-1.5-flash'
+          'gemini-3.8-flash-lite'
         ];
 
         let response = null;
@@ -977,24 +977,26 @@ Reglas obligatorias de estilo y estrategia:
             response.status === 503 ||
             response.status === 500 ||
             lastErrorMsg.toLowerCase().includes('high demand') ||
-            lastErrorMsg.toLowerCase().includes('overloaded');
+            lastErrorMsg.toLowerCase().includes('overloaded') ||
+            lastErrorMsg.toLowerCase().includes('no longer available');
 
-          // Si es un error de clave inválida (400/403) o cuota (429), cortar de inmediato; si es 404 o pico de demanda (503), probar siguiente modelo
+          // Si es un error de clave inválida (400/403) o cuota (429), cortar de inmediato; si es 404, retirado o pico de demanda, probar siguiente modelo
           if (!isRecoverableModelError) {
             throw new Error(mapGeminiErrorToSpanish(response.status, lastErrorMsg));
           }
         }
 
-        // Fallback dinámico: si todos los nombres fijos fallaron por disponibilidad, consultar qué modelos tiene habilitados la clave
+        // Fallback dinámico: si todos los nombres fijos fallaron por disponibilidad, consultar qué modelos tiene habilitados la clave (priorizando el más nuevo)
         if (!response || !response.ok) {
           const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(cleanKey)}`);
           const listData = await listRes.json();
-          const availableFlash = (listData?.models || []).find(m =>
-            m.supportedGenerationMethods?.includes('generateContent') &&
-            m.name.toLowerCase().includes('flash')
-          ) || (listData?.models || []).find(m =>
+          const validModels = (listData?.models || []).filter(m =>
             m.supportedGenerationMethods?.includes('generateContent')
           );
+          const availableFlash =
+            validModels.slice().reverse().find(m => m.name.toLowerCase().includes('flash') && !m.name.toLowerCase().includes('1.5') && !m.name.toLowerCase().includes('2.')) ||
+            validModels.slice().reverse().find(m => m.name.toLowerCase().includes('flash')) ||
+            validModels[validModels.length - 1];
 
           if (availableFlash) {
             const dynamicEndpoint = `https://generativelanguage.googleapis.com/v1beta/${availableFlash.name}:generateContent?key=${encodeURIComponent(cleanKey)}`;
