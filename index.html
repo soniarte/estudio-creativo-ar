@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Estudio AR" />
+  <title>Estudio Creativo AR — Asistente de Contenido</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#fff1f2',
+              100: '#ffe4e6',
+              500: '#f43f5e',
+              600: '#e11d48',
+              700: '#be123c',
+            },
+            indigoAccent: {
+              50: '#eef2ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Ajustes de ergonomía móvil y suavizado de scroll */
+    * {
+      -webkit-tap-highlight-color: transparent;
+    }
+    body {
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+    /* Ocultar barra de scroll horizontal en chips manteniendo funcionalidad táctil */
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    @keyframes pulseSubtle {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+    .animate-pulse-subtle {
+      animation: pulseSubtle 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-slide-up {
+      animation: slideUp 0.35s ease-out forwards;
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-100/80 flex justify-center selection:bg-rose-500 selection:text-white">
+
+  <!-- Contenedor principal Mobile-First (centrado estilo app nativa en desktop) -->
+  <div class="w-full max-w-md bg-slate-50 min-h-screen sm:min-h-0 sm:my-6 sm:rounded-3xl sm:shadow-xl sm:border sm:border-slate-200/80 flex flex-col relative overflow-x-hidden">
+
+    <!-- 1. HEADER LIMPIO Y STICKY -->
+    <header class="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200/70 px-4 py-3.5 flex items-center justify-between sm:rounded-t-3xl">
+      <div class="flex items-center gap-2.5">
+        <div class="w-9 h-9 rounded-2xl bg-gradient-to-tr from-rose-500 to-indigo-600 flex items-center justify-center text-white shadow-sm">
+          <!-- Icono Sparkles SVG -->
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-base font-extrabold tracking-tight text-slate-900 leading-none">Estudio Creativo <span class="text-rose-500">AR</span></h1>
+          <button id="headerStatusBtn" type="button" class="flex items-center gap-1.5 text-[11px] font-semibold mt-1 text-left transition-colors">
+            <span id="apiStatusDot" class="w-2 h-2 rounded-full bg-amber-500"></span>
+            <span id="apiStatusText" class="text-amber-700">Configurar API Key</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Acciones Header: Ideas Guardadas + Configuración -->
+      <div class="flex items-center gap-1.5">
+        <button id="openSavedBtn" type="button" class="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 active:scale-95 transition-all text-white text-xs font-semibold px-3 py-2 rounded-2xl shadow-sm">
+          <svg class="w-4 h-4 text-rose-400" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
+          </svg>
+          <span class="hidden xs:inline">Guardadas</span>
+          <span id="savedCounter" class="bg-rose-500 text-white text-[11px] font-bold px-1.5 py-0.2 rounded-full min-w-[20px] text-center">0</span>
+        </button>
+
+        <button id="openSettingsBtn" type="button" aria-label="Configurar IA y Emprendimiento" class="w-9 h-9 rounded-2xl bg-slate-100 hover:bg-slate-200 active:scale-95 transition-all text-slate-700 flex items-center justify-center border border-slate-200/80">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="flex-1 px-4 py-5 space-y-6 pb-28">
+
+      <!-- PASO 1: PLATAFORMA -->
+      <section aria-labelledby="step1-title" class="space-y-2.5">
+        <div class="flex items-center justify-between">
+          <h2 id="step1-title" class="text-xs font-bold uppercase tracking-wider text-slate-500">1. ¿Dónde lo vas a subir?</h2>
+        </div>
+        <div class="grid grid-cols-3 gap-2.5" id="platformSelector">
+          <!-- Instagram -->
+          <button type="button" data-platform="instagram" class="platform-btn active-platform flex flex-col items-center justify-center p-3.5 rounded-2xl border-2 transition-all active:scale-95 bg-white border-rose-500 shadow-sm ring-2 ring-rose-500/15">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 via-rose-500 to-purple-600 text-white flex items-center justify-center mb-1.5 shadow-sm">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <rect width="20" height="20" x="2" y="2" rx="5" ry="5"></rect>
+                <path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"></path>
+                <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"></line>
+              </svg>
+            </div>
+            <span class="text-xs font-bold text-slate-900">Instagram</span>
+          </button>
+
+          <!-- TikTok -->
+          <button type="button" data-platform="tiktok" class="platform-btn flex flex-col items-center justify-center p-3.5 rounded-2xl border-2 border-slate-200/90 bg-white hover:border-slate-300 transition-all active:scale-95">
+            <div class="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center mb-1.5 shadow-sm">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-5.2 1.74 2.89 2.89 0 012.31-4.64 2.93 2.93 0 01.88.13V9.4a6.84 6.84 0 00-1-.05A6.33 6.33 0 005 20.1a6.34 6.34 0 0010.86-4.43v-7a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1-.1z"/>
+              </svg>
+            </div>
+            <span class="text-xs font-bold text-slate-700">TikTok</span>
+          </button>
+
+          <!-- Facebook -->
+          <button type="button" data-platform="facebook" class="platform-btn flex flex-col items-center justify-center p-3.5 rounded-2xl border-2 border-slate-200/90 bg-white hover:border-slate-300 transition-all active:scale-95">
+            <div class="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center mb-1.5 shadow-sm">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c5.05-.5 9-4.76 9-9.95z"/>
+              </svg>
+            </div>
+            <span class="text-xs font-bold text-slate-700">Facebook</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- PASO 2: FORMATO DINÁMICO -->
+      <section aria-labelledby="step2-title" class="space-y-2.5">
+        <h2 id="step2-title" class="text-xs font-bold uppercase tracking-wider text-slate-500">2. Elegí el formato</h2>
+        <div id="formatContainer" class="grid grid-cols-3 gap-2">
+          <!-- Se renderiza dinámicamente desde JS según plataforma -->
+        </div>
+      </section>
+
+      <!-- PASO 3: TONO / VIBRA -->
+      <section aria-labelledby="step3-title" class="space-y-2.5">
+        <div class="flex items-center justify-between gap-2">
+          <h2 id="step3-title" class="text-xs font-bold uppercase tracking-wider text-slate-500">3. Tono / Vibra</h2>
+          <span class="inline-flex items-center gap-1 text-[11px] font-medium text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-2 py-0.5 rounded-full">
+            <span>🇦🇷</span> Vos + Ganchos activos
+          </span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2" id="toneContainer">
+          <button type="button" data-tone="Cercano / Cálido" class="tone-chip text-left p-3 rounded-2xl border-2 border-indigo-500 bg-indigo-50/60 text-indigo-950 transition-all active:scale-95">
+            <div class="text-xs font-bold flex items-center gap-1.5"><span>🤝</span> Cercano / Cálido</div>
+            <p class="text-[11px] text-slate-600 mt-0.5 leading-tight">Ideal procesos, taller y día a día</p>
+          </button>
+
+          <button type="button" data-tone="Venta directa / Promo" class="tone-chip text-left p-3 rounded-2xl border-2 border-slate-200 bg-white text-slate-800 hover:border-slate-300 transition-all active:scale-95">
+            <div class="text-xs font-bold flex items-center gap-1.5"><span>🔥</span> Venta / Promo</div>
+            <p class="text-[11px] text-slate-500 mt-0.5 leading-tight">Stock nuevo, precios y envíos</p>
+          </button>
+
+          <button type="button" data-tone="Dinámico / Tendencia" class="tone-chip text-left p-3 rounded-2xl border-2 border-slate-200 bg-white text-slate-800 hover:border-slate-300 transition-all active:scale-95">
+            <div class="text-xs font-bold flex items-center gap-1.5"><span>⚡</span> Dinámico / Trend</div>
+            <p class="text-[11px] text-slate-500 mt-0.5 leading-tight">Ritmo rápido, humor y viralidad</p>
+          </button>
+
+          <button type="button" data-tone="Estético / Minimal" class="tone-chip text-left p-3 rounded-2xl border-2 border-slate-200 bg-white text-slate-800 hover:border-slate-300 transition-all active:scale-95">
+            <div class="text-xs font-bold flex items-center gap-1.5"><span>✨</span> Estético / Minimal</div>
+            <p class="text-[11px] text-slate-500 mt-0.5 leading-tight">Detalles visuales y textos cortos</p>
+          </button>
+        </div>
+      </section>
+
+      <!-- PASO 4: CONTENIDO MULTIMEDIA (FOTOS O VIDEOS) -->
+      <section aria-labelledby="step4-title" class="space-y-2.5">
+        <div class="flex items-center justify-between">
+          <h2 id="step4-title" class="text-xs font-bold uppercase tracking-wider text-slate-500">4. Tus fotos o videos</h2>
+          <span id="mediaCountLabel" class="text-[11px] font-semibold text-slate-400">Opcional</span>
+        </div>
+
+        <!-- Zona de carga táctil -->
+        <label for="mediaInput" class="block cursor-pointer group">
+          <div class="border-2 border-dashed border-slate-300 group-hover:border-rose-400 group-active:bg-rose-50/40 bg-white rounded-2xl p-5 text-center transition-all">
+            <div class="w-11 h-11 mx-auto rounded-2xl bg-slate-100 group-hover:bg-rose-100 text-slate-600 group-hover:text-rose-600 flex items-center justify-center transition-colors mb-2">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+              </svg>
+            </div>
+            <p class="text-sm font-bold text-slate-800">Tocá para subir fotos o videos</p>
+            <p class="text-xs text-slate-500 mt-0.5">Soporta múltiples archivos (JPG, PNG, MP4, MOV)</p>
+          </div>
+          <input id="mediaInput" type="file" accept="image/*,video/*" multiple class="hidden" />
+        </label>
+
+        <!-- Grilla de previsualización de archivos subidos -->
+        <div id="mediaPreviewGrid" class="grid grid-cols-2 gap-2.5 hidden"></div>
+      </section>
+
+      <!-- PASO 5: CONTEXTO O IDEA OPCIONAL -->
+      <section aria-labelledby="step5-title" class="space-y-2">
+        <div class="flex items-center justify-between">
+          <label for="contextInput" id="step5-title" class="text-xs font-bold uppercase tracking-wider text-slate-500">5. ¿Qué querés contar? (Opcional)</label>
+          <button id="clearContextBtn" type="button" class="text-[11px] font-semibold text-slate-400 hover:text-rose-500 hidden">Limpiar</button>
+        </div>
+        <textarea
+          id="contextInput"
+          rows="3"
+          placeholder="Ej: Llegó reposición de bandejas de madera, quiero mostrar los detalles y avisar que hacemos envíos a todo el país..."
+          class="w-full rounded-2xl border border-slate-200 bg-white p-3.5 text-sm text-slate-800 placeholder:text-slate-400 focus:border-rose-500 focus:outline-none focus:ring-4 focus:ring-rose-500/10 transition-all resize-none shadow-sm"
+        ></textarea>
+      </section>
+
+      <!-- BANNER DE ERROR AMIGABLE EN ESPAÑOL -->
+      <div id="errorBanner" class="hidden rounded-2xl bg-rose-50 border border-rose-200 p-4 text-rose-900 space-y-2 animate-slide-up">
+        <div class="flex items-start gap-2.5">
+          <span class="text-base leading-none mt-0.5">⚠️</span>
+          <div class="flex-1">
+            <h3 id="errorTitle" class="text-xs font-extrabold uppercase tracking-wide text-rose-800">No se pudieron generar las ideas</h3>
+            <p id="errorMessage" class="text-xs text-rose-700 mt-1 leading-relaxed"></p>
+          </div>
+          <button id="closeErrorBtn" type="button" class="text-rose-400 hover:text-rose-700 p-0.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- SECCIÓN DE RESULTADOS GENERADOS -->
+      <section id="resultsSection" aria-labelledby="results-title" class="hidden space-y-4 pt-2 border-t border-slate-200/80">
+        <div class="flex items-center justify-between gap-2">
+          <div>
+            <h2 id="results-title" class="text-base font-extrabold text-slate-900">Propuestas listas para vos</h2>
+            <p id="resultsSubtitle" class="text-xs text-slate-500 mt-0.5"></p>
+          </div>
+          <button id="regenerateBtn" type="button" class="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 px-3 py-2 rounded-xl transition-all active:scale-95">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span>Otras ideas</span>
+          </button>
+        </div>
+
+        <div id="resultsContainer" class="space-y-4">
+          <!-- Tarjetas generadas dinámicamente por Gemini -->
+        </div>
+      </section>
+
+    </main>
+
+    <!-- BOTÓN FLOTANTE INFERIOR (STICKY CTA) -->
+    <div class="sticky bottom-0 z-20 bg-gradient-to-t from-slate-50 via-slate-50/95 to-transparent px-4 pt-3 pb-5 sm:rounded-b-3xl">
+      <button
+        id="generateBtn"
+        type="button"
+        class="w-full py-4 px-5 rounded-2xl bg-gradient-to-r from-rose-500 to-indigo-600 hover:from-rose-600 hover:to-indigo-700 active:scale-[0.98] text-white font-extrabold text-sm shadow-lg shadow-rose-500/20 flex items-center justify-center gap-2.5 transition-all"
+      >
+        <svg id="generateIcon" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+        </svg>
+        <svg id="loadingSpinner" class="w-5 h-5 animate-spin hidden" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <span id="generateBtnText">Generar ideas virales</span>
+      </button>
+    </div>
+
+    <!-- DRAWER / MODAL DE CONFIGURACIÓN DE IA Y EMPRENDIMIENTO -->
+    <div id="settingsModal" class="fixed inset-0 z-50 hidden flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-xs p-0 sm:p-4">
+      <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl max-h-[90vh] flex flex-col shadow-2xl animate-slide-up">
+        <!-- Cabecera modal settings -->
+        <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+          <div class="flex items-center gap-2.5">
+            <span class="w-9 h-9 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+              </svg>
+            </span>
+            <div>
+              <h3 class="text-base font-extrabold text-slate-900">Conexión con Gemini AI</h3>
+              <p class="text-xs text-slate-500">Se guarda localmente en tu navegador</p>
+            </div>
+          </div>
+          <button id="closeSettingsBtn" type="button" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Cuerpo modal settings -->
+        <div class="p-5 overflow-y-auto space-y-5 flex-1">
+          <!-- Guía rápida 3 pasos -->
+          <div class="bg-indigo-50/70 border border-indigo-100 rounded-2xl p-3.5 space-y-2">
+            <h4 class="text-xs font-extrabold text-indigo-950 flex items-center gap-1.5">
+              <span>🔑</span> ¿Cómo conseguir tu API Key gratis?
+            </h4>
+            <ol class="text-xs text-indigo-900/90 space-y-1.5 list-decimal list-inside leading-relaxed">
+              <li>Entrá a <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" class="font-bold underline text-indigo-600 hover:text-indigo-800">aistudio.google.com</a> con tu cuenta de Google.</li>
+              <li>Tocá el botón azul <strong>"Create API key"</strong> y elegí un proyecto.</li>
+              <li>Copiá la clave generada (empieza con <code class="bg-white/80 px-1 rounded text-[11px]">AIza...</code>) y pegala acá abajo.</li>
+            </ol>
+          </div>
+
+          <!-- Input API Key -->
+          <div class="space-y-1.5">
+            <label for="apiKeyInput" class="block text-xs font-bold uppercase tracking-wider text-slate-600">Tu Google AI Studio API Key</label>
+            <div class="relative">
+              <input
+                id="apiKeyInput"
+                type="password"
+                autocomplete="off"
+                placeholder="AIzaSy..."
+                class="w-full rounded-2xl border border-slate-300 bg-white pr-11 pl-3.5 py-3 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10"
+              />
+              <button id="toggleApiKeyVisibilityBtn" type="button" aria-label="Mostrar u ocultar clave" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 p-1">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Contexto permanente del emprendimiento -->
+          <div class="space-y-1.5">
+            <div class="flex items-center justify-between">
+              <label for="brandContextInput" class="block text-xs font-bold uppercase tracking-wider text-slate-600">Contexto de tu emprendimiento</label>
+              <span class="text-[10px] font-semibold text-slate-400">Opcional • Siempre activo</span>
+            </div>
+            <textarea
+              id="brandContextInput"
+              rows="3"
+              placeholder="Ej: Somos un emprendimiento mayorista y minorista de bazar y decoración en Rosario. Vendemos mates, bandejas y organizadores con envíos a toda Argentina."
+              class="w-full rounded-2xl border border-slate-300 bg-white p-3 text-xs text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/10 resize-none leading-relaxed"
+            ></textarea>
+            <p class="text-[11px] text-slate-500">La IA va a tener en cuenta este perfil en cada idea que genere para no tener que repetirlo.</p>
+          </div>
+        </div>
+
+        <!-- Footer modal settings -->
+        <div class="px-5 py-4 border-t border-slate-100 bg-slate-50/70 rounded-b-3xl flex items-center gap-2.5">
+          <button id="clearApiKeyBtn" type="button" class="px-4 py-3 rounded-2xl border border-slate-200 bg-white hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 text-xs font-bold text-slate-600 transition-colors">
+            Borrar clave
+          </button>
+          <button id="saveSettingsBtn" type="button" class="flex-1 py-3 px-4 rounded-2xl bg-slate-900 hover:bg-slate-800 active:scale-[0.98] text-white text-xs font-bold shadow-sm transition-all">
+            Guardar configuración
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- DRAWER / MODAL DE IDEAS GUARDADAS -->
+    <div id="savedModal" class="fixed inset-0 z-50 hidden flex items-end sm:items-center justify-center bg-slate-900/60 backdrop-blur-xs p-0 sm:p-4">
+      <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-3xl max-h-[85vh] flex flex-col shadow-2xl animate-slide-up">
+        <!-- Cabecera modal -->
+        <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="w-8 h-8 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M5 4a2 2 0 012-2h6a2 2 0 012 2v14l-5-2.5L5 18V4z" />
+              </svg>
+            </span>
+            <div>
+              <h3 class="text-base font-extrabold text-slate-900">Tus Ideas Guardadas</h3>
+              <p class="text-xs text-slate-500">Se almacenan directo en este dispositivo</p>
+            </div>
+          </div>
+          <button id="closeSavedBtn" type="button" class="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Lista de guardadas -->
+        <div id="savedListContainer" class="p-4 overflow-y-auto space-y-3 flex-1">
+          <!-- Renderizado dinámico -->
+        </div>
+      </div>
+    </div>
+
+    <!-- TOAST FLOTANTE PARA NOTIFICACIONES SIN ALERT() -->
+    <div id="toast" class="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-slate-900 text-white text-xs font-semibold px-4 py-2.5 rounded-full shadow-lg opacity-0 pointer-events-none transition-all duration-300 flex items-center gap-2">
+      <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+      <span id="toastMessage">¡Listo!</span>
+    </div>
+
+  </div>
+
+  <!-- LÓGICA DE LA APLICACIÓN -->
+  <script>
+    // ==========================================
+    // CONSTANTES DE STORAGE Y ESTADO GLOBAL
+    // ==========================================
+    const STORAGE_KEYS = {
+      API_KEY: 'estudio_creativo_ar_gemini_key',
+      BRAND_CONTEXT: 'estudio_creativo_ar_brand_context',
+      SAVED_IDEAS: 'estudio_creativo_ar_saved'
+    };
+
+    const state = {
+      platform: 'instagram',
+      format: 'Reel',
+      tone: 'Cercano / Cálido',
+      apiKey: '',
+      brandContext: '',
+      // mediaFiles: { id, name, type: 'image'|'video', previewUrl, framesBase64: [{ mimeType, data }], statusText }
+      mediaFiles: [],
+      savedIdeas: []
+    };
+
+    // Formatos dinámicos por plataforma
+    const formatsByPlatform = {
+      instagram: [
+        { id: 'Reel', label: 'Reel', icon: '🎬' },
+        { id: 'Post / Carrusel', label: 'Post / Carrusel', icon: '🖼️' },
+        { id: 'Historia', label: 'Historia', icon: '⏱️' }
+      ],
+      tiktok: [
+        { id: 'Video / Trend', label: 'Video / Trend', icon: '🎵' },
+        { id: 'Carrusel de Fotos', label: 'Carrusel Fotos', icon: '📸' },
+        { id: 'Historia', label: 'Historia', icon: '⚡' }
+      ],
+      facebook: [
+        { id: 'Posteo', label: 'Posteo', icon: '📝' },
+        { id: 'Reel', label: 'Reel', icon: '🎥' },
+        { id: 'Historia', label: 'Historia', icon: '📲' }
+      ]
+    };
+
+    // ==========================================
+    // REFERENCIAS AL DOM
+    // ==========================================
+    const platformBtns = document.querySelectorAll('.platform-btn');
+    const formatContainer = document.getElementById('formatContainer');
+    const toneChips = document.querySelectorAll('.tone-chip');
+    const mediaInput = document.getElementById('mediaInput');
+    const mediaPreviewGrid = document.getElementById('mediaPreviewGrid');
+    const mediaCountLabel = document.getElementById('mediaCountLabel');
+    const contextInput = document.getElementById('contextInput');
+    const clearContextBtn = document.getElementById('clearContextBtn');
+    const generateBtn = document.getElementById('generateBtn');
+    const generateBtnText = document.getElementById('generateBtnText');
+    const generateIcon = document.getElementById('generateIcon');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const errorBanner = document.getElementById('errorBanner');
+    const errorTitle = document.getElementById('errorTitle');
+    const errorMessage = document.getElementById('errorMessage');
+    const closeErrorBtn = document.getElementById('closeErrorBtn');
+    const resultsSection = document.getElementById('resultsSection');
+    const resultsSubtitle = document.getElementById('resultsSubtitle');
+    const resultsContainer = document.getElementById('resultsContainer');
+    const regenerateBtn = document.getElementById('regenerateBtn');
+    const savedCounter = document.getElementById('savedCounter');
+    const openSavedBtn = document.getElementById('openSavedBtn');
+    const closeSavedBtn = document.getElementById('closeSavedBtn');
+    const savedModal = document.getElementById('savedModal');
+    const savedListContainer = document.getElementById('savedListContainer');
+
+    // Referencias Modal Settings
+    const headerStatusBtn = document.getElementById('headerStatusBtn');
+    const apiStatusDot = document.getElementById('apiStatusDot');
+    const apiStatusText = document.getElementById('apiStatusText');
+    const openSettingsBtn = document.getElementById('openSettingsBtn');
+    const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+    const settingsModal = document.getElementById('settingsModal');
+    const apiKeyInput = document.getElementById('apiKeyInput');
+    const toggleApiKeyVisibilityBtn = document.getElementById('toggleApiKeyVisibilityBtn');
+    const brandContextInput = document.getElementById('brandContextInput');
+    const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+    const clearApiKeyBtn = document.getElementById('clearApiKeyBtn');
+
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+
+    // ==========================================
+    // INICIALIZACIÓN
+    // ==========================================
+    function init() {
+      loadSettingsFromStorage();
+      loadSavedIdeas();
+      renderFormats();
+      setupEventListeners();
+    }
+
+    function loadSettingsFromStorage() {
+      try {
+        state.apiKey = localStorage.getItem(STORAGE_KEYS.API_KEY) || '';
+        state.brandContext = localStorage.getItem(STORAGE_KEYS.BRAND_CONTEXT) || '';
+      } catch (e) {
+        state.apiKey = '';
+        state.brandContext = '';
+      }
+      updateApiStatusIndicator();
+    }
+
+    function updateApiStatusIndicator() {
+      const hasKey = Boolean(state.apiKey && state.apiKey.trim().length > 10);
+      if (hasKey) {
+        apiStatusDot.className = 'w-2 h-2 rounded-full bg-emerald-500 shadow-2xs';
+        apiStatusText.textContent = 'IA Conectada';
+        apiStatusText.className = 'text-emerald-700 font-bold';
+      } else {
+        apiStatusDot.className = 'w-2 h-2 rounded-full bg-amber-500 animate-pulse';
+        apiStatusText.textContent = 'Configurar API Key';
+        apiStatusText.className = 'text-amber-700 font-semibold';
+      }
+    }
+
+    function openSettingsModal() {
+      apiKeyInput.value = state.apiKey;
+      brandContextInput.value = state.brandContext;
+      apiKeyInput.type = 'password';
+      settingsModal.classList.remove('hidden');
+    }
+
+    function showToast(msg) {
+      toastMessage.textContent = msg;
+      toast.classList.remove('opacity-0', '-translate-y-2');
+      toast.classList.add('opacity-100', 'translate-y-0');
+      setTimeout(() => {
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        toast.classList.add('opacity-0', '-translate-y-2');
+      }, 2400);
+    }
+
+    function showErrorBanner(title, msg) {
+      errorTitle.textContent = title;
+      errorMessage.textContent = msg;
+      errorBanner.classList.remove('hidden');
+      errorBanner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function hideErrorBanner() {
+      errorBanner.classList.add('hidden');
+    }
+
+    // ==========================================
+    // RENDERIZADO DE FORMATOS DINÁMICOS
+    // ==========================================
+    function renderFormats() {
+      const formats = formatsByPlatform[state.platform];
+      if (!formats.some(f => f.id === state.format)) {
+        state.format = formats[0].id;
+      }
+
+      formatContainer.innerHTML = formats.map(fmt => {
+        const isSelected = fmt.id === state.format;
+        return `
+          <button
+            type="button"
+            data-format="${fmt.id}"
+            class="format-btn py-3 px-2 rounded-2xl border-2 text-center transition-all active:scale-95 flex flex-col items-center justify-center gap-1 ${
+              isSelected
+                ? 'border-slate-900 bg-slate-900 text-white shadow-sm'
+                : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300'
+            }"
+          >
+            <span class="text-base leading-none">${fmt.icon}</span>
+            <span class="text-xs font-bold leading-tight">${fmt.label}</span>
+          </button>
+        `;
+      }).join('');
+
+      document.querySelectorAll('.format-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.format = btn.dataset.format;
+          renderFormats();
+        });
+      });
+    }
+
+    // ==========================================
+    // PROCESAMIENTO MULTIMEDIA (COMPRESIÓN <=1024px Y 3 FOTOGRAMAS POR VIDEO)
+    // ==========================================
+    async function handleFilesUpload(fileList) {
+      const files = Array.from(fileList);
+      if (!files.length) return;
+
+      showToast('Procesando archivos...');
+
+      for (const file of files) {
+        const id = 'media_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+        const isVideo = file.type.startsWith('video/');
+
+        if (isVideo) {
+          try {
+            const frames = await extractThreeVideoFrames(file);
+            state.mediaFiles.push({
+              id,
+              name: file.name,
+              type: 'video',
+              previewUrl: frames.length > 0 ? `data:${frames[0].mimeType};base64,${frames[0].data}` : null,
+              framesBase64: frames,
+              statusText: `Video (${frames.length} fotogramas)`
+            });
+          } catch (err) {
+            state.mediaFiles.push({
+              id,
+              name: file.name,
+              type: 'video',
+              previewUrl: null,
+              framesBase64: [],
+              statusText: 'Video (sin vista previa)'
+            });
+          }
+        } else if (file.type.startsWith('image/')) {
+          try {
+            const compressed = await compressImageFile(file, 1024, 0.82);
+            state.mediaFiles.push({
+              id,
+              name: file.name,
+              type: 'image',
+              previewUrl: `data:${compressed.mimeType};base64,${compressed.data}`,
+              framesBase64: [compressed],
+              statusText: 'Foto lista'
+            });
+          } catch (err) {
+            showToast('No se pudo procesar una imagen');
+          }
+        }
+      }
+
+      renderMediaPreviews();
+      mediaInput.value = '';
+    }
+
+    // Redimensiona una imagen a máximo maxDim (1024px) en JPEG liviano y devuelve { mimeType, data (base64 puro) }
+    function compressImageFile(file, maxDim = 1024, quality = 0.82) {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        const url = URL.createObjectURL(file);
+
+        img.onload = () => {
+          URL.revokeObjectURL(url);
+          let { width, height } = img;
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          const base64Data = dataUrl.split(',')[1];
+          resolve({ mimeType: 'image/jpeg', data: base64Data });
+        };
+
+        img.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error('Error leyendo imagen'));
+        };
+
+        img.src = url;
+      });
+    }
+
+    // Extrae 3 fotogramas clave (inicio ~10%, mitad ~50%, final ~85%) comprimidos a max 1024px
+    function extractThreeVideoFrames(file) {
+      return new Promise((resolve, reject) => {
+        const video = document.createElement('video');
+        const url = URL.createObjectURL(file);
+        video.preload = 'metadata';
+        video.muted = true;
+        video.playsInline = true;
+        video.src = url;
+
+        const timeout = setTimeout(() => {
+          URL.revokeObjectURL(url);
+          reject(new Error('Timeout extrayendo fotogramas'));
+        }, 9000);
+
+        video.onloadedmetadata = async () => {
+          const duration = isFinite(video.duration) && video.duration > 0 ? video.duration : 2;
+          const timestamps = [
+            Math.min(0.3, duration * 0.1),
+            duration * 0.5,
+            Math.max(0, duration * 0.85)
+          ];
+
+          const frames = [];
+          try {
+            for (const t of timestamps) {
+              const frame = await captureFrameAtTime(video, t, 1024);
+              if (frame) frames.push(frame);
+            }
+            clearTimeout(timeout);
+            URL.revokeObjectURL(url);
+            resolve(frames);
+          } catch (e) {
+            clearTimeout(timeout);
+            URL.revokeObjectURL(url);
+            reject(e);
+          }
+        };
+
+        video.onerror = () => {
+          clearTimeout(timeout);
+          URL.revokeObjectURL(url);
+          reject(new Error('Error cargando video'));
+        };
+      });
+    }
+
+    function captureFrameAtTime(videoElement, timeSec, maxDim = 1024) {
+      return new Promise((resolve) => {
+        const onSeeked = () => {
+          videoElement.removeEventListener('seeked', onSeeked);
+          let width = videoElement.videoWidth || 720;
+          let height = videoElement.videoHeight || 1280;
+
+          if (width > maxDim || height > maxDim) {
+            if (width > height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(videoElement, 0, 0, width, height);
+
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.78);
+          const base64Data = dataUrl.split(',')[1];
+          resolve({ mimeType: 'image/jpeg', data: base64Data });
+        };
+
+        videoElement.addEventListener('seeked', onSeeked);
+        videoElement.currentTime = timeSec;
+      });
+    }
+
+    function renderMediaPreviews() {
+      const count = state.mediaFiles.length;
+      mediaCountLabel.textContent = count > 0 ? `${count} archivo${count > 1 ? 's' : ''} cargado${count > 1 ? 's' : ''}` : 'Opcional';
+      mediaCountLabel.className = count > 0 ? 'text-[11px] font-bold text-rose-600' : 'text-[11px] font-semibold text-slate-400';
+
+      if (count === 0) {
+        mediaPreviewGrid.classList.add('hidden');
+        mediaPreviewGrid.innerHTML = '';
+        return;
+      }
+
+      mediaPreviewGrid.classList.remove('hidden');
+      mediaPreviewGrid.innerHTML = state.mediaFiles.map(item => `
+        <div class="relative rounded-2xl overflow-hidden border border-slate-200 bg-slate-900 aspect-[4/3] group shadow-xs">
+          ${
+            item.previewUrl
+              ? `<img src="${item.previewUrl}" alt="${item.name}" class="w-full h-full object-cover opacity-95" />`
+              : `<div class="w-full h-full flex flex-col items-center justify-center bg-slate-800 text-white p-2 text-center">
+                   <span class="text-2xl mb-1">🎞️</span>
+                   <span class="text-[10px] truncate max-w-full opacity-80">${item.name}</span>
+                 </div>`
+          }
+
+          <div class="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/85 via-black/50 to-transparent p-2 pt-5">
+            <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${
+              item.type === 'video' ? 'bg-indigo-500 text-white' : 'bg-white/90 text-slate-900'
+            }">
+              ${item.type === 'video' ? '🎬 ' + item.statusText : '🖼️ Foto'}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onclick="removeMedia('${item.id}')"
+            aria-label="Eliminar archivo"
+            class="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/65 hover:bg-rose-600 text-white flex items-center justify-center backdrop-blur-xs transition-colors active:scale-90"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      `).join('');
+    }
+
+    window.removeMedia = function(id) {
+      state.mediaFiles = state.mediaFiles.filter(m => m.id !== id);
+      renderMediaPreviews();
+    };
+
+    // ==========================================
+    // INTEGRACIÓN REAL CON GEMINI API (gemini-2.5-flash)
+    // ==========================================
+    async function generateWithGemini() {
+      hideErrorBanner();
+
+      // Verificar API Key configurada
+      if (!state.apiKey || state.apiKey.trim().length < 10) {
+        openSettingsModal();
+        showToast('Primero pegá tu API Key de Google AI Studio');
+        return;
+      }
+
+      const platformName = state.platform === 'instagram' ? 'Instagram' : state.platform === 'tiktok' ? 'TikTok' : 'Facebook';
+      const formatName = state.format;
+      const tone = state.tone;
+      const userIdea = contextInput.value.trim();
+
+      // Construir System Instruction en español rioplatense/argentino
+      const systemPrompt = `Sos un estratega de contenidos y community manager senior especialista en redes sociales en Argentina (Instagram, TikTok y Facebook) para emprendimientos y comercios.
+Reglas obligatorias de estilo y estrategia:
+1. Lenguaje: Escribí en español argentino/rioplatense natural y cotidiano (usá el voseo: "vos", "mirá", "fijate", "pedilo", "sumate", "re", "al toque"), manteniendo un tono profesional, cercano y comercial sin caer en caricaturas forzadas ni lunfardo exagerado.
+2. Retención y Viralidad: Cada propuesta debe estar diseñada para frenar el scroll en los primeros 3 segundos mediante un gancho visual o textual potente, aprovechando dinámicas actuales de formatos cortos (POV, antes/después, detalle de producto, detrás de escena, prueba social o pregunta disparadora).
+3. Análisis Visual: Si el usuario adjunta imágenes o fotogramas extraídos de un video, analizá detalladamente qué productos, materiales, colores, iluminación, personas o acciones se ven en ellas e integrá esos detalles reales en la secuencia visual y el copy.
+4. Devolvé SIEMPRE exactamente 3 propuestas creativas bien diferenciadas entre sí (por ejemplo: una enfocada en detalle/deseo, otra en interacción/consultas y otra en tendencia/urgencia).`;
+
+      // Construir partes del mensaje multimodal (texto + inline_data)
+      const userParts = [];
+
+      let promptText = `Necesito 3 ideas creativas listas para publicar con estos parámetros:\n`;
+      promptText += `- Red social: ${platformName}\n`;
+      promptText += `- Formato: ${formatName}\n`;
+      promptText += `- Tono / Vibra deseada: ${tone}\n`;
+
+      if (state.brandContext && state.brandContext.trim()) {
+        promptText += `- Contexto fijo del emprendimiento: ${state.brandContext.trim()}\n`;
+      }
+
+      if (userIdea) {
+        promptText += `- Idea o descripción específica para este posteo: ${userIdea}\n`;
+      } else {
+        promptText += `- Idea o descripción específica: No se ingresó texto adicional; basate principalmente en las imágenes/fotogramas adjuntos y el contexto del emprendimiento.\n`;
+      }
+
+      const totalImages = state.mediaFiles.reduce((acc, item) => acc + item.framesBase64.length, 0);
+      if (totalImages > 0) {
+        promptText += `\nAdjunto ${totalImages} imagen(es)/fotograma(s) de video del material real que voy a usar. Mirá bien qué aparece en cada toma para armar el guion visual y los textos.`;
+      } else {
+        promptText += `\nNo adjunté fotos ni videos esta vez, así que sugerime qué tomas grabar o fotografiar para lograr el mejor resultado.`;
+      }
+
+      userParts.push({ text: promptText });
+
+      // Adjuntar imágenes y fotogramas en formato inline_data
+      for (const media of state.mediaFiles) {
+        for (const frame of media.framesBase64) {
+          userParts.push({
+            inline_data: {
+              mime_type: frame.mimeType,
+              data: frame.data
+            }
+          });
+        }
+      }
+
+      // Payload con Structured Outputs (responseSchema)
+      const requestBody = {
+        system_instruction: {
+          parts: [{ text: systemPrompt }]
+        },
+        contents: [
+          {
+            role: 'user',
+            parts: userParts
+          }
+        ],
+        generationConfig: {
+          temperature: 0.85,
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: 'ARRAY',
+            description: 'Lista de exactamente 3 propuestas creativas para redes sociales en Argentina.',
+            items: {
+              type: 'OBJECT',
+              properties: {
+                titulo: {
+                  type: 'STRING',
+                  description: 'Título atractivo y corto de la idea.'
+                },
+                enfoque: {
+                  type: 'STRING',
+                  description: 'Etiqueta breve con emoji del enfoque estratégico (ej: 🔥 Alto Engagement, 💬 Genera Consultas, ⚡ Tendencia).'
+                },
+                gancho: {
+                  type: 'STRING',
+                  description: 'Frase exacta para poner en pantalla o decir en los primeros 3 segundos para frenar el scroll.'
+                },
+                secuencia: {
+                  type: 'STRING',
+                  description: 'Guion paso a paso de qué mostrar en las fotos o tomas de video, ritmo de cortes y texto en pantalla.'
+                },
+                copy: {
+                  type: 'STRING',
+                  description: 'Texto completo de la descripción/pie de foto en español argentino, listo para copiar y pegar, incluyendo llamado a la acción y 4 a 6 hashtags relevantes.'
+                },
+                tip_audio: {
+                  type: 'STRING',
+                  description: 'Recomendación concreta de audio en tendencia, música, voz en off o sticker interactivo ideal para el formato.'
+                }
+              },
+              required: ['titulo', 'enfoque', 'gancho', 'secuencia', 'copy', 'tip_audio']
+            }
+          }
+        }
+      };
+
+      // Estado visual de carga
+      setLoadingState(true);
+
+      try {
+        const cleanKey = state.apiKey.trim();
+        const candidateModels = [
+          'gemini-2.5-flash',
+          'gemini-2.0-flash',
+          'gemini-3-flash-preview',
+          'gemini-1.5-flash'
+        ];
+
+        let response = null;
+        let data = null;
+        let lastErrorMsg = '';
+
+        // Intentar en cascada con los modelos Flash vigentes hasta encontrar uno activo y disponible
+        for (const modelName of candidateModels) {
+          const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(cleanKey)}`;
+
+          response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+          });
+
+          data = await response.json();
+
+          if (response.ok) {
+            break;
+          }
+
+          lastErrorMsg = data?.error?.message || `Error HTTP ${response.status}`;
+          const isRecoverableModelError =
+            response.status === 404 ||
+            response.status === 503 ||
+            response.status === 500 ||
+            lastErrorMsg.toLowerCase().includes('high demand') ||
+            lastErrorMsg.toLowerCase().includes('overloaded');
+
+          // Si es un error de clave inválida (400/403) o cuota (429), cortar de inmediato; si es 404 o pico de demanda (503), probar siguiente modelo
+          if (!isRecoverableModelError) {
+            throw new Error(mapGeminiErrorToSpanish(response.status, lastErrorMsg));
+          }
+        }
+
+        // Fallback dinámico: si todos los nombres fijos fallaron por disponibilidad, consultar qué modelos tiene habilitados la clave
+        if (!response || !response.ok) {
+          const listRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(cleanKey)}`);
+          const listData = await listRes.json();
+          const availableFlash = (listData?.models || []).find(m =>
+            m.supportedGenerationMethods?.includes('generateContent') &&
+            m.name.toLowerCase().includes('flash')
+          ) || (listData?.models || []).find(m =>
+            m.supportedGenerationMethods?.includes('generateContent')
+          );
+
+          if (availableFlash) {
+            const dynamicEndpoint = `https://generativelanguage.googleapis.com/v1beta/${availableFlash.name}:generateContent?key=${encodeURIComponent(cleanKey)}`;
+            response = await fetch(dynamicEndpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(requestBody)
+            });
+            data = await response.json();
+          }
+
+          if (!response || !response.ok) {
+            const finalErr = data?.error?.message || lastErrorMsg || 'No se encontró un modelo compatible.';
+            throw new Error(mapGeminiErrorToSpanish(response?.status || 503, finalErr));
+          }
+        }
+
+        const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!rawText) {
+          throw new Error('La IA devolvió una respuesta vacía. Probá de nuevo en unos segundos.');
+        }
+
+        const parsedIdeas = JSON.parse(rawText);
+        if (!Array.isArray(parsedIdeas) || parsedIdeas.length === 0) {
+          throw new Error('No se pudieron interpretar las propuestas generadas. Intentá nuevamente.');
+        }
+
+        // Normalizar estructura para renderizado y guardado
+        const normalizedIdeas = parsedIdeas.slice(0, 3).map((item, idx) => ({
+          id: 'gemini_' + Date.now() + '_' + idx,
+          badge: item.enfoque || '✨ Propuesta IA',
+          title: item.titulo || `Idea Creativa #${idx + 1}`,
+          platform: platformName,
+          format: formatName,
+          tone: tone,
+          hook: item.gancho || '',
+          sequence: item.secuencia || '',
+          copy: item.copy || '',
+          audioTip: item.tip_audio || ''
+        }));
+
+        renderResults(normalizedIdeas);
+        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      } catch (err) {
+        console.error('Gemini API Error:', err);
+        const friendlyMessage = err.message.includes('Failed to fetch')
+          ? 'No tenés conexión a internet o se bloqueó la solicitud. Revisá tu red e intentá de nuevo.'
+          : err.message;
+        showErrorBanner('Hubo un problema al conectar con Gemini', friendlyMessage);
+      } finally {
+        setLoadingState(false);
+      }
+    }
+
+    function mapGeminiErrorToSpanish(status, rawMessage) {
+      const lower = rawMessage.toLowerCase();
+      if (status === 400 && (lower.includes('api key') || lower.includes('api_key'))) {
+        return 'Tu API Key no es válida. Revisá que la hayas copiado completa desde Google AI Studio (empieza con AIza...) y volvé a guardarla en el engranaje.';
+      }
+      if (status === 403) {
+        return 'Acceso denegado con esa API Key. Verificá en Google AI Studio que la clave esté activa y tenga permisos para Gemini.';
+      }
+      if (status === 429 || lower.includes('quota') || lower.includes('rate limit')) {
+        return 'Alcanzaste el límite de consultas gratuitas por minuto de Google AI Studio. Esperá unos 30 segundos y volvé a tocar Generar.';
+      }
+      if (status === 503 || lower.includes('high demand') || lower.includes('overloaded')) {
+        return 'Los servidores de Google están con mucha demanda en este momento. Esperá 10 segundos y volvé a tocar Generar.';
+      }
+      if (status === 404) {
+        return `No se encontró un modelo activo para tu clave (${rawMessage}). Verificá en Google AI Studio que tu proyecto tenga habilitada la API de Gemini.`;
+      }
+      return `Detalle técnico: ${rawMessage}`;
+    }
+
+    function setLoadingState(isLoading) {
+      generateBtn.disabled = isLoading;
+      regenerateBtn.disabled = isLoading;
+      if (isLoading) {
+        generateBtn.classList.add('opacity-90', 'cursor-wait');
+        generateIcon.classList.add('hidden');
+        loadingSpinner.classList.remove('hidden');
+        generateBtnText.textContent = state.mediaFiles.length > 0
+          ? 'Analizando tus fotos/videos con IA...'
+          : 'Creando propuestas con Gemini...';
+      } else {
+        generateBtn.classList.remove('opacity-90', 'cursor-wait');
+        generateIcon.classList.remove('hidden');
+        loadingSpinner.classList.add('hidden');
+        generateBtnText.textContent = 'Generar ideas virales';
+      }
+    }
+
+    function renderResults(ideas) {
+      resultsSection.classList.remove('hidden');
+      const platformLabel = state.platform === 'instagram' ? 'Instagram' : state.platform === 'tiktok' ? 'TikTok' : 'Facebook';
+      resultsSubtitle.textContent = `${platformLabel} • ${state.format} • Tono ${state.tone}`;
+
+      resultsContainer.innerHTML = ideas.map((idea, index) => {
+        const isAlreadySaved = state.savedIdeas.some(s => s.title === idea.title && s.copy === idea.copy);
+        const encodedIdea = encodeURIComponent(JSON.stringify(idea));
+
+        return `
+          <article class="bg-white rounded-3xl border border-slate-200/90 p-4 shadow-sm space-y-3.5 animate-slide-up" style="animation-delay: ${index * 90}ms">
+            <!-- Cabecera tarjeta -->
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <span class="inline-block text-[11px] font-bold text-rose-600 bg-rose-50 px-2.5 py-0.5 rounded-full mb-1">
+                  ${idea.badge}
+                </span>
+                <h3 class="text-base font-extrabold text-slate-900 leading-snug">${idea.title}</h3>
+              </div>
+              <button
+                type="button"
+                onclick="toggleSaveIdea('${encodedIdea}', this)"
+                class="shrink-0 flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-xl border transition-all active:scale-95 ${
+                  isAlreadySaved
+                    ? 'bg-rose-500 border-rose-500 text-white'
+                    : 'bg-slate-50 border-slate-200 text-slate-700 hover:border-rose-300 hover:text-rose-600'
+                }"
+              >
+                <svg class="w-3.5 h-3.5" fill="${isAlreadySaved ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                </svg>
+                <span>${isAlreadySaved ? 'Guardada' : 'Guardar'}</span>
+              </button>
+            </div>
+
+            <!-- Bloque 1: Gancho -->
+            <div class="bg-amber-50/70 border border-amber-200/70 rounded-2xl p-3">
+              <div class="text-[11px] font-extrabold uppercase tracking-wider text-amber-800 mb-1">1. Gancho en pantalla (0-3s)</div>
+              <p class="text-sm font-bold text-slate-900 leading-snug">${idea.hook}</p>
+            </div>
+
+            <!-- Bloque 2: Secuencia -->
+            <div class="bg-slate-50 rounded-2xl p-3 border border-slate-100">
+              <div class="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 mb-1">2. Secuencia / Guion visual</div>
+              <p class="text-xs text-slate-700 leading-relaxed">${idea.sequence}</p>
+            </div>
+
+            <!-- Bloque 3: Copy listo para pegar -->
+            <div class="bg-indigo-50/50 border border-indigo-100 rounded-2xl p-3 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-extrabold uppercase tracking-wider text-indigo-900">3. Copy listo para pegar</span>
+                <button
+                  type="button"
+                  onclick="copyTextToClipboard('${encodeURIComponent(idea.copy)}', this)"
+                  class="inline-flex items-center gap-1 text-[11px] font-bold bg-white hover:bg-indigo-600 hover:text-white text-indigo-600 border border-indigo-200 px-2.5 py-1 rounded-lg transition-all active:scale-95 shadow-2xs"
+                >
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  <span>Copiar texto</span>
+                </button>
+              </div>
+              <p class="text-xs text-slate-800 whitespace-pre-line leading-relaxed bg-white/80 p-2.5 rounded-xl border border-indigo-100/80">${idea.copy}</p>
+            </div>
+
+            <!-- Bloque 4: Tip de tendencia -->
+            <div class="flex items-start gap-2.5 bg-slate-900 text-slate-100 rounded-2xl p-3">
+              <span class="text-base leading-none mt-0.5">🎧</span>
+              <div>
+                <div class="text-[10px] font-bold uppercase tracking-wider text-rose-400">4. Tip de tendencia / Audio</div>
+                <p class="text-xs text-slate-200 leading-relaxed mt-0.5">${idea.audioTip}</p>
+              </div>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    // ==========================================
+    // COPIADO AL PORTAPAPELES
+    // ==========================================
+    window.copyTextToClipboard = function(encodedText, btnEl) {
+      const text = decodeURIComponent(encodedText);
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      document.body.appendChild(textarea);
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        const originalHtml = btnEl.innerHTML;
+        btnEl.innerHTML = `<span>✓ ¡Copiado!</span>`;
+        btnEl.classList.add('bg-emerald-600', 'text-white', 'border-emerald-600');
+        btnEl.classList.remove('bg-white', 'text-indigo-600');
+        showToast('Copy copiado al portapapeles');
+
+        setTimeout(() => {
+          btnEl.innerHTML = originalHtml;
+          btnEl.classList.remove('bg-emerald-600', 'text-white', 'border-emerald-600');
+          btnEl.classList.add('bg-white', 'text-indigo-600');
+        }, 1800);
+      } catch (err) {
+        showToast('No se pudo copiar automáticamente');
+      } finally {
+        document.body.removeChild(textarea);
+      }
+    };
+
+    // ==========================================
+    // GUARDADO PERSISTENTE EN LOCALSTORAGE
+    // ==========================================
+    function loadSavedIdeas() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEYS.SAVED_IDEAS);
+        state.savedIdeas = raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        state.savedIdeas = [];
+      }
+      updateSavedCounter();
+    }
+
+    function persistSavedIdeas() {
+      try {
+        localStorage.setItem(STORAGE_KEYS.SAVED_IDEAS, JSON.stringify(state.savedIdeas));
+      } catch (e) {
+        // Ignorar si almacenamiento está lleno
+      }
+      updateSavedCounter();
+    }
+
+    function updateSavedCounter() {
+      savedCounter.textContent = state.savedIdeas.length;
+    }
+
+    window.toggleSaveIdea = function(encodedIdea, btnEl) {
+      const idea = JSON.parse(decodeURIComponent(encodedIdea));
+      const existingIndex = state.savedIdeas.findIndex(s => s.title === idea.title && s.copy === idea.copy);
+
+      if (existingIndex > -1) {
+        state.savedIdeas.splice(existingIndex, 1);
+        btnEl.innerHTML = `
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+          </svg>
+          <span>Guardar</span>
+        `;
+        btnEl.className = 'shrink-0 flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-xl border transition-all active:scale-95 bg-slate-50 border-slate-200 text-slate-700 hover:border-rose-300 hover:text-rose-600';
+        showToast('Quitada de guardadas');
+      } else {
+        state.savedIdeas.unshift({
+          ...idea,
+          savedAt: new Date().toLocaleDateString('es-AR', { day: '2-digit', month: 'short' })
+        });
+        btnEl.innerHTML = `
+          <svg class="w-3.5 h-3.5" fill="currentColor" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+          </svg>
+          <span>Guardada</span>
+        `;
+        btnEl.className = 'shrink-0 flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-xl border transition-all active:scale-95 bg-rose-500 border-rose-500 text-white';
+        showToast('¡Idea guardada!');
+      }
+
+      persistSavedIdeas();
+    };
+
+    window.deleteSavedByIndex = function(idx) {
+      state.savedIdeas.splice(idx, 1);
+      persistSavedIdeas();
+      renderSavedModalList();
+      showToast('Idea eliminada');
+    };
+
+    function renderSavedModalList() {
+      if (state.savedIdeas.length === 0) {
+        savedListContainer.innerHTML = `
+          <div class="text-center py-10 px-4">
+            <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3 text-xl">📌</div>
+            <p class="text-sm font-bold text-slate-700">Todavía no guardaste ideas</p>
+            <p class="text-xs text-slate-500 mt-1">Generá propuestas y tocá "Guardar" en las que más te gusten para tenerlas a mano.</p>
+          </div>
+        `;
+        return;
+      }
+
+      savedListContainer.innerHTML = state.savedIdeas.map((item, idx) => `
+        <div class="border border-slate-200 rounded-2xl p-3.5 bg-slate-50/70 space-y-2">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <div class="flex items-center gap-1.5 text-[10px] font-bold uppercase text-indigo-600">
+                <span>${item.platform}</span> • <span>${item.format}</span> • <span class="text-slate-400">${item.savedAt || 'Hoy'}</span>
+              </div>
+              <h4 class="text-sm font-extrabold text-slate-900 mt-0.5">${item.title}</h4>
+            </div>
+            <button type="button" onclick="deleteSavedByIndex(${idx})" class="text-slate-400 hover:text-rose-600 p-1" title="Eliminar">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
+          <p class="text-xs font-semibold text-amber-900 bg-amber-50 px-2.5 py-1.5 rounded-xl border border-amber-200/60">Gancho: ${item.hook}</p>
+          <p class="text-xs text-slate-600 whitespace-pre-line bg-white p-2.5 rounded-xl border border-slate-200/80">${item.copy}</p>
+          <div class="flex justify-end">
+            <button
+              type="button"
+              onclick="copyTextToClipboard('${encodeURIComponent(item.copy)}', this)"
+              class="text-[11px] font-bold text-indigo-600 bg-white border border-indigo-200 px-3 py-1 rounded-lg active:scale-95"
+            >
+              Copiar texto
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // ==========================================
+    // EVENT LISTENERS
+    // ==========================================
+    function setupEventListeners() {
+      // Cambio de Plataforma
+      platformBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          state.platform = btn.dataset.platform;
+          platformBtns.forEach(b => {
+            const isSelected = b.dataset.platform === state.platform;
+            b.className = isSelected
+              ? 'platform-btn active-platform flex flex-col items-center justify-center p-3.5 rounded-2xl border-2 transition-all active:scale-95 bg-white border-rose-500 shadow-sm ring-2 ring-rose-500/15'
+              : 'platform-btn flex flex-col items-center justify-center p-3.5 rounded-2xl border-2 border-slate-200/90 bg-white hover:border-slate-300 transition-all active:scale-95';
+          });
+          renderFormats();
+        });
+      });
+
+      // Cambio de Tono / Vibra
+      toneChips.forEach(chip => {
+        chip.addEventListener('click', () => {
+          state.tone = chip.dataset.tone;
+          toneChips.forEach(c => {
+            const isSelected = c.dataset.tone === state.tone;
+            c.className = isSelected
+              ? 'tone-chip text-left p-3 rounded-2xl border-2 border-indigo-500 bg-indigo-50/60 text-indigo-950 transition-all active:scale-95'
+              : 'tone-chip text-left p-3 rounded-2xl border-2 border-slate-200 bg-white text-slate-800 hover:border-slate-300 transition-all active:scale-95';
+          });
+        });
+      });
+
+      // Subida de archivos multimedia
+      mediaInput.addEventListener('change', (e) => {
+        handleFilesUpload(e.target.files);
+      });
+
+      // Botón limpiar texto de contexto
+      contextInput.addEventListener('input', () => {
+        if (contextInput.value.trim().length > 0) {
+          clearContextBtn.classList.remove('hidden');
+        } else {
+          clearContextBtn.classList.add('hidden');
+        }
+      });
+
+      clearContextBtn.addEventListener('click', () => {
+        contextInput.value = '';
+        clearContextBtn.classList.add('hidden');
+        contextInput.focus();
+      });
+
+      closeErrorBtn.addEventListener('click', hideErrorBanner);
+
+      // Botón principal y regenerar conectados a Gemini real
+      generateBtn.addEventListener('click', generateWithGemini);
+      regenerateBtn.addEventListener('click', generateWithGemini);
+
+      // Modal de Configuración (API Key + Contexto Emprendimiento)
+      openSettingsBtn.addEventListener('click', openSettingsModal);
+      headerStatusBtn.addEventListener('click', openSettingsModal);
+
+      closeSettingsBtn.addEventListener('click', () => {
+        settingsModal.classList.add('hidden');
+      });
+
+      settingsModal.addEventListener('click', (e) => {
+        if (e.target === settingsModal) {
+          settingsModal.classList.add('hidden');
+        }
+      });
+
+      toggleApiKeyVisibilityBtn.addEventListener('click', () => {
+        apiKeyInput.type = apiKeyInput.type === 'password' ? 'text' : 'password';
+      });
+
+      saveSettingsBtn.addEventListener('click', () => {
+        const cleanKey = apiKeyInput.value.trim();
+        const cleanContext = brandContextInput.value.trim();
+
+        state.apiKey = cleanKey;
+        state.brandContext = cleanContext;
+
+        try {
+          localStorage.setItem(STORAGE_KEYS.API_KEY, cleanKey);
+          localStorage.setItem(STORAGE_KEYS.BRAND_CONTEXT, cleanContext);
+        } catch (e) {
+          // Ignorar error de storage
+        }
+
+        updateApiStatusIndicator();
+        settingsModal.classList.add('hidden');
+        hideErrorBanner();
+        showToast(cleanKey ? '¡Configuración guardada!' : 'Contexto guardado (falta API Key)');
+      });
+
+      clearApiKeyBtn.addEventListener('click', () => {
+        apiKeyInput.value = '';
+        state.apiKey = '';
+        try {
+          localStorage.removeItem(STORAGE_KEYS.API_KEY);
+        } catch (e) {}
+        updateApiStatusIndicator();
+        showToast('API Key eliminada');
+      });
+
+      // Modal de Ideas Guardadas
+      openSavedBtn.addEventListener('click', () => {
+        renderSavedModalList();
+        savedModal.classList.remove('hidden');
+      });
+
+      closeSavedBtn.addEventListener('click', () => {
+        savedModal.classList.add('hidden');
+      });
+
+      savedModal.addEventListener('click', (e) => {
+        if (e.target === savedModal) {
+          savedModal.classList.add('hidden');
+        }
+      });
+    }
+
+    // Iniciar al cargar la página
+    window.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
